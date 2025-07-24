@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hefi istriku ❤️</title>
+  <style>
+    :root {
+      --heart-color: #ff4081;
+      --star-color: #ffeb3b;
+      --bg-gradient-start: #ffdee9;
+      --bg-gradient-end: #b5fffc;
+      --cell-bg: rgba(255, 255, 255, 0.8);
+      --cell-hover: rgba(255, 224, 240, 0.9);
+      --shadow-color: rgba(0, 0, 0, 0.2);
+      --winning-cell-glow: 0 0 20px 5px;
+    }
+    
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      perspective: 1000px;
+    }
+    
+    .login, .game {
+      display: none;
+      margin-top: 50px;
+      animation: fadeIn 0.5s ease-out;
+      transform-style: preserve-3d;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px) rotateX(10deg); }
+      to { opacity: 1; transform: translateY(0) rotateX(0); }
+    }
+    
+    .game-container {
+      transform-style: preserve-3d;
+      perspective: 1000px;
+      transition: transform 0.5s ease;
+    }
+    
+    .grid-container {
+      perspective: 1000px;
+      margin: 30px auto;
+      width: 95%;
+      max-width: 600px;
+      transform-style: preserve-3d;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 6px;
+      transform-style: preserve-3d;
+      transform: rotateX(15deg) rotateY(5deg);
+      transition: transform 0.5s ease;
+    }
+    
+    .cell {
+      position: relative;
+      background: var(--cell-bg);
+      border: none;
+      font-size: 28px;
+      height: 60px;
+      line-height: 60px;
+      cursor: pointer;
+      border-radius: 12px;
+      box-shadow: 0 10px 20px var(--shadow-color),
+                  0 0 0 1px rgba(255,255,255,0.8) inset;
+      transform-style: preserve-3d;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      overflow: hidden;
+      transform: translateZ(0);
+    }
+    
+    .cell::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+      border-radius: 12px;
+      z-index: -1;
+    }
+    
+    .cell.X {
+      color: var(--heart-color);
+      text-shadow: 0 0 15px rgba(255, 64, 129, 0.7);
+      animation: pulseHeart 1s infinite alternate;
+    }
+    
+    .cell.O {
+      color: var(--star-color);
+      text-shadow: 0 0 15px rgba(255, 235, 59, 0.7);
+      animation: pulseStar 1s infinite alternate;
+    }
+    
+    .cell.winning-cell {
+      animation: winningGlow 1.5s infinite alternate, float 3s ease-in-out infinite;
+      position: relative;
+      z-index: 10;
+    }
+    
+    .cell.winning-cell.X {
+      box-shadow: var(--winning-cell-glow) rgba(255, 64, 129, 0.7), 
+                  0 10px 20px var(--shadow-color),
+                  0 0 0 2px rgba(255,255,255,0.9) inset;
+    }
+    
+    .cell.winning-cell.O {
+      box-shadow: var(--winning-cell-glow) rgba(255, 235, 59, 0.7),
+                  0 10px 20px var(--shadow-color),
+                  0 0 0 2px rgba(255,255,255,0.9) inset;
+    }
+    
+    @keyframes pulseHeart {
+      0% { transform: scale(1) translateZ(0); }
+      100% { transform: scale(1.1) translateZ(5px); }
+    }
+    
+    @keyframes pulseStar {
+      0% { transform: rotate(0deg) translateZ(0); }
+      100% { transform: rotate(10deg) translateZ(5px); }
+    }
+    
+    @keyframes winningGlow {
+      0% {
+        transform: translateZ(10px) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translateZ(20px) scale(1.1);
+        opacity: 0.9;
+      }
+    }
+    
+    @keyframes float {
+      0% { transform: translateY(0) translateZ(10px); }
+      50% { transform: translateY(-5px) translateZ(15px); }
+      100% { transform: translateY(0) translateZ(10px); }
+    }
+    
+    #winner {
+      font-size: 24px;
+      margin: 20px;
+      font-weight: bold;
+      color: #4a148c;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      animation: pulse 1.5s infinite, float 3s ease-in-out infinite;
+      transform-style: preserve-3d;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1) translateZ(0); }
+      50% { transform: scale(1.05) translateZ(10px); }
+      100% { transform: scale(1) translateZ(0); }
+    }
+    
+    input, button {
+      padding: 12px 20px;
+      margin: 15px;
+      font-size: 18px;
+      border-radius: 10px;
+      border: none;
+      box-shadow: 0 6px 12px var(--shadow-color);
+      transition: all 0.3s ease;
+      transform-style: preserve-3d;
+      transform: translateZ(0);
+    }
+    
+    input {
+      width: 250px;
+      background: rgba(255,255,255,0.8);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: var(--heart-color);
+      box-shadow: 0 0 15px rgba(255, 64, 129, 0.4);
+      transform: translateZ(10px);
+    }
+    
+    button {
+      background: linear-gradient(45deg, var(--heart-color), #e91e63);
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+      transform: translateZ(0);
+    }
+    
+    button:hover {
+      background: linear-gradient(45deg, #e91e63, #c2185b);
+      transform: translateY(-2px) translateZ(10px);
+      box-shadow: 0 10px 20px var(--shadow-color);
+    }
+    
+    button:active {
+      transform: translateY(0) translateZ(5px);
+    }
+    
+    button::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: rgba(255,255,255,0.1);
+      transform: rotate(45deg);
+      transition: all 0.3s ease;
+    }
+    
+    button:hover::after {
+      left: 100%;
+    }
+    
+    h2 {
+      color: #880e4f;
+      font-size: 28px;
+      margin-bottom: 20px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transform-style: preserve-3d;
+      animation: floatTitle 4s ease-in-out infinite;
+    }
+    
+    @keyframes floatTitle {
+      0% { transform: translateY(0) rotateY(0); }
+      50% { transform: translateY(-5px) rotateY(5deg); }
+      100% { transform: translateY(0) rotateY(0); }
+    }
+    
+    #turnInfo {
+      font-size: 20px;
+      margin: 15px;
+      font-weight: bold;
+      color: #6a1b9a;
+      background: rgba(255,255,255,0.7);
+      padding: 10px 20px;
+      border-radius: 50px;
+      display: inline-block;
+      box-shadow: 0 6px 12px var(--shadow-color);
+      transform-style: preserve-3d;
+      transform: translateZ(0);
+    }
+    
+    .floating-hearts {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+    
+    .heart {
+      position: absolute;
+      opacity: 0;
+      animation: float 15s linear infinite;
+      transform-style: preserve-3d;
+    }
+    
+    #restartButton {
+      display: none;
+      margin: 20px auto;
+      padding: 12px 30px;
+      font-size: 18px;
+      transform: translateZ(0);
+    }
+    
+    .particle {
+      position: absolute;
+      pointer-events: none;
+      transform-style: preserve-3d;
+    }
+    
+    @media (max-width: 600px) {
+      .grid {
+        grid-template-columns: repeat(10, 1fr);
+        transform: rotateX(10deg);
+      }
+      
+      .cell {
+        height: 40px;
+        line-height: 40px;
+        font-size: 20px;
+      }
+      
+      input {
+        width: 80%;
+      }
+      
+      h2 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="floating-hearts" id="floatingHearts"></div>
+  
+  <div class="login" id="login">
+    <h2>Hefi istriku ❤️</h2>
+    <input type="text" id="nameInput" placeholder="Nama"><br>
+    <input type="text" id="roomInput" placeholder="Kode Ruangan"><br>
+    <button onclick="joinGame()">Mulai</button>
+  </div>
+  
+  <div class="game" id="game">
+    <div class="game-container">
+      <h2 id="roomTitle"></h2>
+      <div id="turnInfo"></div>
+      <div class="grid-container">
+        <div class="grid" id="grid"></div>
+      </div>
+      <div id="winner"></div>
+      <button id="restartButton" onclick="restartGame()">Main Lagi</button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDMkW_cZQUP9Fb-XXXXXXXXXXXXXX",
+      authDomain: "hefi-love-game.firebaseapp.com",
+      projectId: "hefi-love-game",
+      storageBucket: "hefi-love-game.appspot.com",
+      messagingSenderId: "347257937190",
+      appId: "1:347257937190:web:xxxxxxxxxxxxxxxx",
+      databaseURL: "https://hefi-love-game-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const loginDiv = document.getElementById("login");
+    const gameDiv = document.getElementById("game");
+    const grid = document.getElementById("grid");
+    const winnerDiv = document.getElementById("winner");
+    const roomTitle = document.getElementById("roomTitle");
+    const turnInfo = document.getElementById("turnInfo");
+    const floatingHearts = document.getElementById("floatingHearts");
+    const restartButton = document.getElementById("restartButton");
+    const gameContainer = document.querySelector(".game-container");
+
+    let playerName = "", playerSymbol = "", roomCode = "", isMyTurn = false, roomRef = null;
+
+    function createHearts() {
+      const colors = ['#ff4081', '#e91e63', '#ff80ab', '#f50057'];
+      for (let i = 0; i < 15; i++) {
+        const heart = document.createElement('div');
+        heart.className = 'heart';
+        heart.innerHTML = '❤️';
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.fontSize = (Math.random() * 20 + 10) + 'px';
+        heart.style.animationDuration = (Math.random() * 10 + 10) + 's';
+        heart.style.animationDelay = Math.random() * 5 + 's';
+        heart.style.color = colors[Math.floor(Math.random() * colors.length)];
+        heart.style.transform = `translateZ(${Math.random() * 50}px)`;
+        floatingHearts.appendChild(heart);
+      }
+    }
+
+    createHearts();
+
+    loginDiv.style.display = "block";
+
+    function joinGame() {
+      playerName = document.getElementById("nameInput").value.trim();
+      roomCode = document.getElementById("roomInput").value.trim();
+      if (!playerName || !roomCode) return alert("Masukkan nama dan kode ruangan.");
+
+      roomRef = db.ref("rooms/" + roomCode);
+      roomRef.once("value", snap => {
+        const data = snap.val();
+        if (!data) {
+          roomRef.set({
+            players: { player1: playerName },
+            board: Array(100).fill(""),
+            turn: "X",
+            status: "waiting"
+          });
+          playerSymbol = "X";
+          isMyTurn = true;
+        } else {
+          const players = data.players || {};
+          if (players.player2) return alert("Ruangan sudah penuh!");
+          roomRef.child("players/player2").set(playerName);
+          roomRef.child("status").set("playing");
+          playerSymbol = "O";
+          isMyTurn = false;
+        }
+        loginDiv.style.display = "none";
+        gameDiv.style.display = "block";
+        roomTitle.textContent = "Ruangan: " + roomCode;
+        listenToRoom(roomRef);
+        
+        document.body.addEventListener('mousemove', tiltEffect);
+      });
+    }
+
+    function tiltEffect(e) {
+      if (!gameContainer) return;
+      
+      const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+      const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+      gameContainer.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+    }
+
+    function listenToRoom(ref) {
+      ref.on("value", snap => {
+        const data = snap.val();
+        if (!data || !data.board) return;
+        const board = data.board;
+        grid.innerHTML = "";
+        
+        // Reset winning cells
+        document.querySelectorAll('.winning-cell').forEach(c => c.classList.remove('winning-cell'));
+        
+        board.forEach((cell, i) => {
+          const div = document.createElement("div");
+          div.className = `cell ${cell}`;
+          div.innerHTML = cell === "X" ? "❤️" : cell === "O" ? "💛" : "";
+          div.onclick = () => makeMove(i, ref, data);
+          
+          if (cell) {
+            div.style.transform = "translateZ(10px)";
+            div.style.boxShadow = "0 15px 30px rgba(0,0,0,0.3), 0 0 0 2px rgba(255,255,255,0.9) inset";
+          }
+          
+          grid.appendChild(div);
+        });
+        
+        if (data.status === "playing") {
+          turnInfo.innerText = data.turn === playerSymbol ? "Giliran Kamu! ✨" : "Menunggu lawan...";
+          isMyTurn = data.turn === playerSymbol;
+          turnInfo.style.animation = "pulse 1.5s infinite";
+        }
+        
+        if (data.winner) {
+          const winnerName = data.winner.symbol === "X" ? data.players.player1 : data.players.player2;
+          winnerDiv.innerHTML = `🎉 ${winnerName} menang! 🏆`;
+          turnInfo.innerHTML = "";
+          turnInfo.style.animation = "none";
+          restartButton.style.display = "block";
+          
+          // Highlight winning cells
+          if (data.winner.winningCells) {
+            data.winner.winningCells.forEach(index => {
+              const cell = document.querySelectorAll('.cell')[index];
+              if (cell) {
+                cell.classList.add('winning-cell');
+              }
+            });
+          }
+          
+          if (data.winner.symbol === playerSymbol) {
+            createParticles();
+          }
+        } else {
+          restartButton.style.display = "none";
+        }
+      });
+    }
+
+    function createParticles() {
+      const colors = ['#ff4081', '#ffeb3b', '#4caf50', '#2196f3'];
+      const symbols = ['❤️', '💛', '✨', '🎉', '🏆'];
+      
+      for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          particle.innerHTML = symbols[Math.floor(Math.random() * symbols.length)];
+          particle.style.left = Math.random() * 100 + 'vw';
+          particle.style.top = Math.random() * 100 + 'vh';
+          particle.style.fontSize = (Math.random() * 20 + 10) + 'px';
+          particle.style.color = colors[Math.floor(Math.random() * colors.length)];
+          particle.style.transform = `translateZ(${Math.random() * 100}px)`;
+          particle.style.animation = `float ${Math.random() * 3 + 2}s ease-out forwards`;
+          
+          document.body.appendChild(particle);
+          
+          setTimeout(() => {
+            particle.remove();
+          }, 3000);
+        }, i * 100);
+      }
+    }
+
+    function makeMove(index, ref, data) {
+      if (!isMyTurn || data.board[index] !== "" || data.winner) return;
+      
+      const cell = document.querySelectorAll('.cell')[index];
+      cell.style.transform = "translateZ(20px) scale(0.9)";
+      setTimeout(() => {
+        cell.style.transform = "translateZ(10px)";
+      }, 300);
+      
+      data.board[index] = playerSymbol;
+      const nextTurn = playerSymbol === "X" ? "O" : "X";
+      const winner = checkWin(data.board);
+      
+      const updateData = {
+        board: data.board,
+        turn: nextTurn
+      };
+      
+      if (winner) {
+        updateData.winner = winner;
+      }
+      
+      ref.update(updateData);
+    }
+
+    function checkWin(board) {
+      const lines = [];
+      for (let r = 0; r < 10; r++) {
+        for (let c = 0; c < 10; c++) {
+          const i = r * 10 + c;
+          if (c <= 4) lines.push({cells: [i, i+1, i+2, i+3, i+4, i+5], dir: 'horizontal'});
+          if (r <= 4) lines.push({cells: [i, i+10, i+20, i+30, i+40, i+50], dir: 'vertical'});
+          if (r <= 4 && c <= 4) lines.push({cells: [i, i+11, i+22, i+33, i+44, i+55], dir: 'diagonal-down'});
+          if (r <= 4 && c >= 5) lines.push({cells: [i, i+9, i+18, i+27, i+36, i+45], dir: 'diagonal-up'});
+        }
+      }
+      
+      for (const line of lines) {
+        const [a, b, c, d, e, f] = line.cells;
+        if (board[a] && board[a] === board[b] && board[a] === board[c] && 
+            board[a] === board[d] && board[a] === board[e] && board[a] === board[f]) {
+          return {
+            symbol: board[a],
+            winningCells: line.cells,
+            direction: line.dir
+          };
+        }
+      }
+      return null;
+    }
+
+    function restartGame() {
+      if (!roomRef) return;
+      
+      roomRef.update({
+        board: Array(100).fill(""),
+        turn: "X",
+        winner: null,
+        status: "playing"
+      });
+      
+      winnerDiv.innerHTML = "";
+      restartButton.style.display = "none";
+    }
+  </script>
+</body>
+</html>
