@@ -13,7 +13,7 @@
       --cell-bg: rgba(255, 255, 255, 0.8);
       --cell-hover: rgba(255, 224, 240, 0.9);
       --shadow-color: rgba(0, 0, 0, 0.2);
-      --winning-cell-glow: 0 0 20px 5px;
+      --winning-cell-glow: 0 0 25px 8px;
     }
     
     body {
@@ -332,6 +332,9 @@
     </div>
   </div>
 
+  <audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-positive-interface-beep-221.mp3"></audio>
+  <audio id="winSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script>
@@ -356,6 +359,8 @@
     const floatingHearts = document.getElementById("floatingHearts");
     const restartButton = document.getElementById("restartButton");
     const gameContainer = document.querySelector(".game-container");
+    const clickSound = document.getElementById("clickSound");
+    const winSound = document.getElementById("winSound");
 
     let playerName = "", playerSymbol = "", roomCode = "", isMyTurn = false, roomRef = null;
 
@@ -466,6 +471,7 @@
                 cell.classList.add('winning-cell');
               }
             });
+            winSound.play();
           }
           
           if (data.winner.symbol === playerSymbol) {
@@ -505,6 +511,10 @@
     function makeMove(index, ref, data) {
       if (!isMyTurn || data.board[index] !== "" || data.winner) return;
       
+      // Play click sound
+      clickSound.currentTime = 0;
+      clickSound.play();
+      
       const cell = document.querySelectorAll('.cell')[index];
       cell.style.transform = "translateZ(20px) scale(0.9)";
       setTimeout(() => {
@@ -532,17 +542,17 @@
       for (let r = 0; r < 10; r++) {
         for (let c = 0; c < 10; c++) {
           const i = r * 10 + c;
-          if (c <= 4) lines.push({cells: [i, i+1, i+2, i+3, i+4, i+5], dir: 'horizontal'});
-          if (r <= 4) lines.push({cells: [i, i+10, i+20, i+30, i+40, i+50], dir: 'vertical'});
-          if (r <= 4 && c <= 4) lines.push({cells: [i, i+11, i+22, i+33, i+44, i+55], dir: 'diagonal-down'});
-          if (r <= 4 && c >= 5) lines.push({cells: [i, i+9, i+18, i+27, i+36, i+45], dir: 'diagonal-up'});
+          if (c <= 5) lines.push({cells: [i, i+1, i+2, i+3, i+4], dir: 'horizontal'});
+          if (r <= 5) lines.push({cells: [i, i+10, i+20, i+30, i+40], dir: 'vertical'});
+          if (r <= 5 && c <= 5) lines.push({cells: [i, i+11, i+22, i+33, i+44], dir: 'diagonal-down'});
+          if (r <= 5 && c >= 4) lines.push({cells: [i, i+9, i+18, i+27, i+36], dir: 'diagonal-up'});
         }
       }
       
       for (const line of lines) {
-        const [a, b, c, d, e, f] = line.cells;
+        const [a, b, c, d, e] = line.cells;
         if (board[a] && board[a] === board[b] && board[a] === board[c] && 
-            board[a] === board[d] && board[a] === board[e] && board[a] === board[f]) {
+            board[a] === board[d] && board[a] === board[e]) {
           return {
             symbol: board[a],
             winningCells: line.cells,
